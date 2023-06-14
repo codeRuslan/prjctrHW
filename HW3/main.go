@@ -18,11 +18,13 @@ type Character struct {
 }
 
 type Adventure struct {
-	mainPart    string
-	optionsPart [2]string
-	deltaHealth int
-	deltaMana   int
-	end         bool
+	mainPart         string
+	optionsPart      [2]string
+	deltaHealth      int
+	deltaMana        int
+	end              bool
+	nextAdventureOne *Adventure
+	nextAdventureTwo *Adventure
 }
 
 func (i *Inventory) PutItemToInventory(inputItem string) {
@@ -56,6 +58,8 @@ func main() {
 		0,
 		0,
 		false,
+		nil,
+		nil,
 	}
 
 	StartA := Adventure{
@@ -65,6 +69,8 @@ func main() {
 		10,
 		15,
 		false,
+		nil,
+		nil,
 	}
 	StartAA := Adventure{
 		"You decide to turn right, following the tunnel that veers off to the side. The narrow passage becomes even more claustrophobic as you proceed, and the air grows thick with an unsettling stillness. After what feels like an eternity of winding through the labyrinthine tunnels, you come across a faint glimmer of light ahead. Intrigued, you quicken your pace, eager to uncover the source of the illumination.It happens to be a strange monster glowing green.",
@@ -72,6 +78,8 @@ func main() {
 		0,
 		0,
 		true,
+		nil,
+		nil,
 	}
 
 	StartAB := Adventure{
@@ -81,6 +89,8 @@ func main() {
 		0,
 		0,
 		true,
+		nil,
+		nil,
 	}
 
 	StartB := Adventure{
@@ -90,6 +100,8 @@ func main() {
 		-15,
 		5,
 		false,
+		nil,
+		nil,
 	}
 
 	StartBA := Adventure{
@@ -99,6 +111,8 @@ func main() {
 		-100,
 		-100,
 		true,
+		nil,
+		nil,
 	}
 
 	StartBB := Adventure{
@@ -108,41 +122,39 @@ func main() {
 		5,
 		2,
 		true,
+		nil,
+		nil,
 	}
 
-	Start.printAdventureText(&playerCharacter)
-	fmt.Scan(&userChoice)
-	if userChoice == 1 {
-		StartA.printAdventureText(&playerCharacter)
+	Start.nextAdventureOne = &StartA
+	Start.nextAdventureTwo = &StartB
+
+	StartA.nextAdventureOne = &StartAA
+	StartA.nextAdventureTwo = &StartAB
+
+	StartB.nextAdventureOne = &StartBA
+	StartB.nextAdventureTwo = &StartBB
+
+	currentAdventure := &Start
+
+	for !currentAdventure.end {
+		currentAdventure.printAdventureText(&playerCharacter)
 		fmt.Scan(&userChoice)
+
 		if userChoice == 1 {
-			StartAA.printAdventureText(&playerCharacter)
-			fmt.Scan(&userChoice)
+			currentAdventure = currentAdventure.nextAdventureOne
 		} else if userChoice == 2 {
-			StartAB.printAdventureText(&playerCharacter)
-			fmt.Scan(&userChoice)
-		}
-	} else if userChoice == 2 {
-		StartB.printAdventureText(&playerCharacter)
-		fmt.Scan(&userChoice)
-		if userChoice == 1 {
-			StartBA.printAdventureText(&playerCharacter)
-			fmt.Scan(&userChoice)
-		} else if userChoice == 2 {
-			StartBB.printAdventureText(&playerCharacter)
-			fmt.Scan(&userChoice)
+			currentAdventure = currentAdventure.nextAdventureTwo
 		}
 	}
+	fmt.Println("The End")
+	fmt.Println("Good Bye!")
+	os.Exit(1)
 
 }
 
 func (adv *Adventure) printAdventureText(c *Character) {
 
-	if adv.end == true {
-		fmt.Println("The End")
-		fmt.Println("Good Bye!")
-		os.Exit(1)
-	}
 	c.editHealthAndMana(adv.deltaMana, adv.deltaHealth)
 
 	fmt.Println("----------------------------------------")
