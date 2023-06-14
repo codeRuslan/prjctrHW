@@ -4,16 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"reflect"
 	"strings"
 )
-
-/*
-Завдання про текстовий редактор. Створити slice string з текстом, який користувач вводить у текстовий редактор.
-Написати функцію, яка приймає на вхід рядок та знаходить у текстовому редакторі всі рядки, які містять цей рядок.
-Використовуючи цю функцію, додати можливість пошуку тексту в текстовому редакторі та вивести на екран усі
-відповідні результати.
-*/
 
 var inputStringForSearch string
 
@@ -47,32 +39,32 @@ func (n *Notebook) SearchForNotebookText(inputText string) {
 
 func (n *Notebook) SearchForNotebookRow(inputRow []string) {
 	foundRow := false
+	checkRowsEqual := true
+
 	for i, row := range n.text {
-		if reflect.DeepEqual(row, inputRow) {
+		for b, element := range inputRow {
+			if element != row[b] {
+				checkRowsEqual = false
+			}
+		}
+		if len(row) == len(inputRow) && checkRowsEqual {
 			foundRow = true
 			fmt.Println("Row number for your search query is --> ", i+1)
 		}
 	}
 
-	if foundRow != true {
-		fmt.Println("We could not found the row you have been searching for. Try one more time!")
+	if !foundRow {
+		fmt.Println("We could not find the row you have been searching for. Try again!")
 	}
+}
+
+func (n *Notebook) AddRowToNotebook(row []string) {
+	n.text = append(n.text, row)
 }
 
 func main() {
 	noteBookText := [][]string{}
 	scanner := bufio.NewScanner(os.Stdin)
-
-	for scanner.Scan() {
-		text := scanner.Text()
-
-		if text == "" {
-			break
-		}
-
-		sliceText := strings.Split(text, " ")
-		noteBookText = append(noteBookText, sliceText)
-	}
 
 	mainNotebook := Notebook{
 		noteBookText,
@@ -83,12 +75,28 @@ func main() {
 	fmt.Println(mainNotebook.GetTextNotebook())
 	fmt.Println("******************************")
 
-	fmt.Println("Here is the results of Search for Row inside Notebook Text:")
+	fmt.Println("Here are the results of the search for a row inside Notebook Text:")
 	testInput := []string{"Hello", "World"} // To test if SearchForNotebookRow works fine
 	mainNotebook.SearchForNotebookRow(testInput)
+
+	fmt.Println("Input word combinations you are looking for (press Enter to exit):")
+	for scanner.Scan() {
+		text := scanner.Text()
+
+		if text == "" {
+			break
+		}
+
+		sliceText := strings.Split(text, " ")
+		mainNotebook.AddRowToNotebook(sliceText)
+	}
+
+	fmt.Println("Text inside Notebook after adding new rows:")
+	fmt.Println("******************************")
+	fmt.Println(mainNotebook.GetTextNotebook())
+	fmt.Println("******************************")
 
 	fmt.Println("Input a word combination you are looking for:")
 	fmt.Scan(&inputStringForSearch)
 	mainNotebook.SearchForNotebookText(inputStringForSearch)
-
 }

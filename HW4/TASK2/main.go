@@ -10,6 +10,7 @@ import (
 
 func CalculateAverage(inputFloatSlice []float64) float64 {
 	sumOfMarks := 0.0
+	substractFromLen := 0
 	for _, mark := range inputFloatSlice {
 		if mark >= 0 && mark <= 12 {
 			sumOfMarks += mark
@@ -18,10 +19,11 @@ func CalculateAverage(inputFloatSlice []float64) float64 {
 			fmt.Println("Mark is invalid --> ", mark)
 			fmt.Println("Therefore this mark will not be used in calculations.")
 			fmt.Println("---")
+			substractFromLen++
 		}
 	}
 
-	return sumOfMarks / float64(len(inputFloatSlice))
+	return sumOfMarks / float64(len(inputFloatSlice)-substractFromLen)
 
 }
 
