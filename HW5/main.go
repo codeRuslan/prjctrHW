@@ -28,9 +28,7 @@ func GetPlayingBoard(playingBoard map[string]string) {
 			}
 		}
 		fmt.Println("  -------------------")
-
 	}
-
 	fmt.Println("===================")
 }
 
@@ -45,49 +43,57 @@ func PutPlayerTurn(playerType string, playingBoard map[string]string) {
 	fmt.Println("------------")
 	for {
 		fmt.Println("Choose coordinates to place " + playerType + ":")
-		// var coordinate string
 		fmt.Scanln(&coordinate)
-		if playingBoard[coordinate] != "-" {
-			fmt.Println("You cannot use that coordinate, as it is busy already!")
-			fmt.Println("Try one more time")
-		} else if _, ok := playingBoard[coordinate]; !ok {
-			fmt.Println("There are no such coordinate!")
-			fmt.Println("Try one more time")
-		} else {
-			PutXO(coordinate, playingBoard, playerType)
-			fmt.Println("State of Playingboard after Player " + playerType + " did his turn:")
-			fmt.Println("Place " + playerType + " on coordinate " + coordinate)
-			GetPlayingBoard(playingBoard)
-			break
+		if !isValidCoordinate(playingBoard, coordinate) {
+			continue
 		}
+		PutXO(coordinate, playingBoard, playerType)
+		fmt.Println("State of Playingboard after Player " + playerType + " did their turn:")
+		fmt.Println("Place " + playerType + " on coordinate " + coordinate)
+		GetPlayingBoard(playingBoard)
+		break
 	}
 	lastTurn = playerType
 	CheckWinCondition(playingBoard, coordinate)
+}
+
+func isValidCoordinate(playingBoard map[string]string, coordinate string) bool {
+	_, ok := playingBoard[coordinate]
+	if !ok {
+		fmt.Println("There is no such coordinate!")
+		fmt.Println("Try again")
+		return false
+	}
+
+	if playingBoard[coordinate] != "-" {
+		fmt.Println("You cannot use that coordinate, as it is already occupied!")
+		fmt.Println("Try again")
+		return false
+	}
+	return true
 }
 
 func CheckWinCondition(playingBoard map[string]string, coordinate string) {
 	// CHECK horizontal win
 	for _, row := range rows {
 		if row == string(coordinate[0]) {
-			if (playingBoard[row+"1"] == playingBoard[row+"2"]) && (playingBoard[row+"2"] == playingBoard[row+"3"]) {
+			if playingBoard[row+"1"] == playingBoard[row+"2"] && playingBoard[row+"2"] == playingBoard[row+"3"] {
 				gameWon = true
 			}
 		}
 	}
 
 	// CHECK vertical win
-
-	KeyColumnToInt, _ := strconv.Atoi(string(coordinate[1]))
+	keyColumnToInt, _ := strconv.Atoi(string(coordinate[1]))
 	for _, column := range columns {
-		if column == KeyColumnToInt {
-			if (playingBoard["A"+strconv.Itoa(column)] == playingBoard["B"+strconv.Itoa(column)]) && (playingBoard["B"+strconv.Itoa(column)] == playingBoard["C"+strconv.Itoa(column)]) {
+		if column == keyColumnToInt {
+			if playingBoard["A"+strconv.Itoa(column)] == playingBoard["B"+strconv.Itoa(column)] && playingBoard["B"+strconv.Itoa(column)] == playingBoard["C"+strconv.Itoa(column)] {
 				gameWon = true
 			}
 		}
 	}
 
 	// CHECK Diagonal win
-
 	if playingBoard["A1"] != "-" && playingBoard["B2"] != "-" && playingBoard["C3"] != "-" {
 		if playingBoard["A1"] == playingBoard["B2"] && playingBoard["B2"] == playingBoard["C3"] {
 			gameWon = true
@@ -98,11 +104,10 @@ func CheckWinCondition(playingBoard map[string]string, coordinate string) {
 			gameWon = true
 		}
 	}
-
 }
 
 func main() {
-	var playingBoard = make(map[string]string)
+	playingBoard := make(map[string]string)
 	for _, row := range rows {
 		for _, column := range columns {
 			columnStr := strconv.Itoa(column)
@@ -110,30 +115,21 @@ func main() {
 		}
 	}
 
-	for {
-		if gameWon == false {
-			fmt.Println("Game has been initiated:\n")
-			GetPlayingBoard(playingBoard)
+	fmt.Println("Game has been initiated:\n")
+	GetPlayingBoard(playingBoard)
 
-			PutPlayerTurn("X", playingBoard)
-			if turnCounter == 9 {
-				fmt.Println("Game has been finished!")
-				fmt.Println("You got a draw")
-				break
-			}
-
-			if gameWon != false {
-				fmt.Println("Game has been finished!")
-				fmt.Println(lastTurn + " Player has won a game")
-				break
-			}
-			PutPlayerTurn("O", playingBoard)
-
-		} else {
-			fmt.Println("Game has been finished!")
-			fmt.Println(lastTurn + " Player has won a game")
+	for !gameWon && turnCounter < 9 {
+		PutPlayerTurn("X", playingBoard)
+		if turnCounter == 9 {
 			break
 		}
+		PutPlayerTurn("O", playingBoard)
 	}
 
+	fmt.Println("Game has been finished!")
+	if gameWon {
+		fmt.Println(lastTurn + " Player has won the game")
+	} else {
+		fmt.Println("The game ended in a draw")
+	}
 }
