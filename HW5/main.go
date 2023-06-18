@@ -131,7 +131,7 @@ func (g *Game) Play() {
 	fmt.Println("Game has been initiated:\n")
 	g.GetPlayingBoard()
 
-	for !g.gameWon && g.turnCounter < 9 {
+	for g.IsGameFinished() {
 		g.PutPlayerTurn("X")
 		if g.turnCounter == 9 || g.gameWon {
 			break
@@ -145,6 +145,10 @@ func (g *Game) Play() {
 	} else {
 		fmt.Println("The game ended in a draw")
 	}
+}
+
+func (g *Game) IsGameFinished() bool {
+	return !g.gameWon && g.turnCounter < 9
 }
 
 func main() {
