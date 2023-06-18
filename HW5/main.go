@@ -7,11 +7,32 @@ import (
 
 var rows = []string{"A", "B", "C"}
 var columns = []int{1, 2, 3}
-var gameWon = false
-var lastTurn string
-var turnCounter = 0
 
-func GetPlayingBoard(playingBoard map[string]string) {
+type Game struct {
+	playingBoard map[string]string
+	gameWon      bool
+	lastTurn     string
+	turnCounter  int
+}
+
+func NewGame() *Game {
+	playingBoard := make(map[string]string)
+	for _, row := range rows {
+		for _, column := range columns {
+			columnStr := strconv.Itoa(column)
+			playingBoard[row+columnStr] = "-"
+		}
+	}
+
+	return &Game{
+		playingBoard: playingBoard,
+		gameWon:      false,
+		lastTurn:     "",
+		turnCounter:  0,
+	}
+}
+
+func (g *Game) GetPlayingBoard() {
 	fmt.Println("  ===================")
 	fmt.Println("     1 ---- 2 --- 3")
 	fmt.Println("  -------------------")
@@ -21,7 +42,7 @@ func GetPlayingBoard(playingBoard map[string]string) {
 			if i == 1 {
 				fmt.Print("  |")
 			}
-			indexRow := playingBoard[row+(strconv.Itoa(i))]
+			indexRow := g.playingBoard[row+(strconv.Itoa(i))]
 			fmt.Print("  " + indexRow + "  |")
 			if i == 3 {
 				fmt.Println("")
@@ -32,40 +53,40 @@ func GetPlayingBoard(playingBoard map[string]string) {
 	fmt.Println("===================")
 }
 
-func PutXO(coordinate string, playingBoard map[string]string, symbol string) {
-	playingBoard[coordinate] = symbol
+func (g *Game) PutXO(coordinate string, symbol string) {
+	g.playingBoard[coordinate] = symbol
 }
 
-func PutPlayerTurn(playerType string, playingBoard map[string]string) {
-	turnCounter++
+func (g *Game) PutPlayerTurn(playerType string) {
+	g.turnCounter++
 	var coordinate string
 	fmt.Println("\nPlayer " + playerType + " your turn:")
 	fmt.Println("------------")
 	for {
 		fmt.Println("Choose coordinates to place " + playerType + ":")
 		fmt.Scanln(&coordinate)
-		if !isValidCoordinate(playingBoard, coordinate) {
+		if !g.isValidCoordinate(coordinate) {
 			continue
 		}
-		PutXO(coordinate, playingBoard, playerType)
+		g.PutXO(coordinate, playerType)
 		fmt.Println("State of Playingboard after Player " + playerType + " did their turn:")
 		fmt.Println("Place " + playerType + " on coordinate " + coordinate)
-		GetPlayingBoard(playingBoard)
+		g.GetPlayingBoard()
 		break
 	}
-	lastTurn = playerType
-	CheckWinCondition(playingBoard, coordinate)
+	g.lastTurn = playerType
+	g.CheckWinCondition(coordinate)
 }
 
-func isValidCoordinate(playingBoard map[string]string, coordinate string) bool {
-	_, ok := playingBoard[coordinate]
+func (g *Game) isValidCoordinate(coordinate string) bool {
+	_, ok := g.playingBoard[coordinate]
 	if !ok {
 		fmt.Println("There is no such coordinate!")
 		fmt.Println("Try again")
 		return false
 	}
 
-	if playingBoard[coordinate] != "-" {
+	if g.playingBoard[coordinate] != "-" {
 		fmt.Println("You cannot use that coordinate, as it is already occupied!")
 		fmt.Println("Try again")
 		return false
@@ -73,12 +94,12 @@ func isValidCoordinate(playingBoard map[string]string, coordinate string) bool {
 	return true
 }
 
-func CheckWinCondition(playingBoard map[string]string, coordinate string) {
+func (g *Game) CheckWinCondition(coordinate string) {
 	// CHECK horizontal win
 	for _, row := range rows {
 		if row == string(coordinate[0]) {
-			if playingBoard[row+"1"] == playingBoard[row+"2"] && playingBoard[row+"2"] == playingBoard[row+"3"] {
-				gameWon = true
+			if g.playingBoard[row+"1"] == g.playingBoard[row+"2"] && g.playingBoard[row+"2"] == g.playingBoard[row+"3"] && g.playingBoard[row+"1"] != "-" {
+				g.gameWon = true
 			}
 		}
 	}
@@ -87,49 +108,46 @@ func CheckWinCondition(playingBoard map[string]string, coordinate string) {
 	keyColumnToInt, _ := strconv.Atoi(string(coordinate[1]))
 	for _, column := range columns {
 		if column == keyColumnToInt {
-			if playingBoard["A"+strconv.Itoa(column)] == playingBoard["B"+strconv.Itoa(column)] && playingBoard["B"+strconv.Itoa(column)] == playingBoard["C"+strconv.Itoa(column)] {
-				gameWon = true
+			if g.playingBoard["A"+strconv.Itoa(column)] == g.playingBoard["B"+strconv.Itoa(column)] && g.playingBoard["B"+strconv.Itoa(column)] == g.playingBoard["C"+strconv.Itoa(column)] && g.playingBoard["A"+strconv.Itoa(column)] != "-" {
+				g.gameWon = true
 			}
 		}
 	}
 
 	// CHECK Diagonal win
-	if playingBoard["A1"] != "-" && playingBoard["B2"] != "-" && playingBoard["C3"] != "-" {
-		if playingBoard["A1"] == playingBoard["B2"] && playingBoard["B2"] == playingBoard["C3"] {
-			gameWon = true
+	if g.playingBoard["A1"] != "-" && g.playingBoard["B2"] != "-" && g.playingBoard["C3"] != "-" {
+		if g.playingBoard["A1"] == g.playingBoard["B2"] && g.playingBoard["B2"] == g.playingBoard["C3"] {
+			g.gameWon = true
 		}
 	}
-	if playingBoard["A3"] != "-" && playingBoard["B2"] != "-" && playingBoard["C1"] != "-" {
-		if playingBoard["A3"] == playingBoard["B2"] && playingBoard["B2"] == playingBoard["C1"] {
-			gameWon = true
+	if g.playingBoard["A3"] != "-" && g.playingBoard["B2"] != "-" && g.playingBoard["C1"] != "-" {
+		if g.playingBoard["A3"] == g.playingBoard["B2"] && g.playingBoard["B2"] == g.playingBoard["C1"] {
+			g.gameWon = true
 		}
 	}
 }
 
-func main() {
-	playingBoard := make(map[string]string)
-	for _, row := range rows {
-		for _, column := range columns {
-			columnStr := strconv.Itoa(column)
-			playingBoard[row+columnStr] = "-"
-		}
-	}
-
+func (g *Game) Play() {
 	fmt.Println("Game has been initiated:\n")
-	GetPlayingBoard(playingBoard)
+	g.GetPlayingBoard()
 
-	for !gameWon && turnCounter < 9 {
-		PutPlayerTurn("X", playingBoard)
-		if turnCounter == 9 {
+	for !g.gameWon && g.turnCounter < 9 {
+		g.PutPlayerTurn("X")
+		if g.turnCounter == 9 || g.gameWon {
 			break
 		}
-		PutPlayerTurn("O", playingBoard)
+		g.PutPlayerTurn("O")
 	}
 
 	fmt.Println("Game has been finished!")
-	if gameWon {
-		fmt.Println(lastTurn + " Player has won the game")
+	if g.gameWon {
+		fmt.Println(g.lastTurn + " Player has won the game")
 	} else {
 		fmt.Println("The game ended in a draw")
 	}
+}
+
+func main() {
+	game := NewGame()
+	game.Play()
 }
