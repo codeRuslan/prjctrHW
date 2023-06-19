@@ -8,22 +8,15 @@ import "fmt"
 // Для кожної поштової посилки необхідно зберігати адресу отримувача й відправника.
 // Додати сортувальний відділ, який залежно від типу посилки відправляє її тим або іншим шляхом.
 
-func (bp BoxPackage) SendToReceiver() bool {
-	fmt.Println("Sending to receiver...")
-	return true
+type Sender interface {
+	SendToReceiver() bool
+	GetShipmentType() string
 }
 
-func (bp BoxPackage) GetShipmentType() string {
-	return "Truck"
-}
-
-func (lp LetterPackage) SendToReceiver() bool {
-	fmt.Println("Sending to receiver...")
-	return true
-}
-
-func (lp LetterPackage) GetShipmentType() string {
-	return "Airplane"
+type Package struct {
+	packaging Sender
+	address   string
+	sender    string
 }
 
 func (p Package) ChooseRouting() {
@@ -31,19 +24,26 @@ func (p Package) ChooseRouting() {
 	fmt.Printf("You should use shipping by %s", shipmentType)
 }
 
-type PackageType interface {
-	SendToReceiver() bool
-	GetShipmentType() string
+type BoxPackage struct{}
+
+func (bp BoxPackage) SendToReceiver() bool {
+	fmt.Println("Sending box package to receiver...")
+	return true
 }
 
-type BoxPackage struct{}
+func (bp BoxPackage) GetShipmentType() string {
+	return "Truck"
+}
 
 type LetterPackage struct{}
 
-type Package struct {
-	packaging PackageType
-	address   string
-	sender    string
+func (lp LetterPackage) SendToReceiver() bool {
+	fmt.Println("Sending letter package to receiver...")
+	return true
+}
+
+func (lp LetterPackage) GetShipmentType() string {
+	return "Airplane"
 }
 
 func main() {
@@ -51,15 +51,15 @@ func main() {
 	letterPackage := LetterPackage{}
 
 	packageBox := Package{
-		boxPackage,
-		"Street1 1",
-		"Andre",
+		packaging: boxPackage,
+		address:   "Street1 1",
+		sender:    "Andre",
 	}
 
 	packageLetter := Package{
-		letterPackage,
-		"Street 2",
-		"Luizable",
+		packaging: letterPackage,
+		address:   "Street 2",
+		sender:    "Luizable",
 	}
 
 	packageBox.packaging.SendToReceiver()
