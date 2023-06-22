@@ -2,15 +2,10 @@ package main
 
 import "fmt"
 
-// 1.
-//
-// Створити інтерфейс «Посилка» й реалізувати його для двох класів — «Коробка» і «Конверт».
-// Для кожної поштової посилки необхідно зберігати адресу отримувача й відправника.
-// Додати сортувальний відділ, який залежно від типу посилки відправляє її тим або іншим шляхом.
-
 type Sender interface {
 	SendToReceiver(string) bool
 	GetShipmentType() string
+	GetUniqueField() string
 }
 
 type Package struct {
@@ -24,10 +19,12 @@ func (p Package) ChooseRouting() {
 	fmt.Printf("You should use shipping by %s\n", shipmentType)
 }
 
-type BoxPackage struct{}
+type BoxPackage struct {
+	boxSize string // Unique field for BoxPackage
+}
 
 func (bp BoxPackage) SendToReceiver(address string) bool {
-	fmt.Printf("Sending box package to receviver located at %s\n", address)
+	fmt.Printf("Sending box package to receiver located at %s\n", address)
 	return true
 }
 
@@ -35,10 +32,16 @@ func (bp BoxPackage) GetShipmentType() string {
 	return "Truck"
 }
 
-type LetterPackage struct{}
+func (bp BoxPackage) GetUniqueField() string {
+	return bp.boxSize
+}
+
+type LetterPackage struct {
+	paperType string // Unique field for LetterPackage
+}
 
 func (lp LetterPackage) SendToReceiver(address string) bool {
-	fmt.Printf("Sending letter package to receviver located at %s\n", address)
+	fmt.Printf("Sending letter package to receiver located at %s\n", address)
 	return true
 }
 
@@ -46,13 +49,17 @@ func (lp LetterPackage) GetShipmentType() string {
 	return "Airplane"
 }
 
+func (lp LetterPackage) GetUniqueField() string {
+	return lp.paperType
+}
+
 func (packageInfo Package) GetReceiver() string {
 	return packageInfo.address
 }
 
 func main() {
-	boxPackage := BoxPackage{}
-	letterPackage := LetterPackage{}
+	boxPackage := BoxPackage{boxSize: "Large"}
+	letterPackage := LetterPackage{paperType: "A4"}
 
 	packageBox := Package{
 		packaging: boxPackage,
@@ -74,4 +81,10 @@ func main() {
 
 	packageBox.ChooseRouting()
 	packageLetter.ChooseRouting()
+
+	uniqueFieldBox := packageBox.packaging.GetUniqueField()
+	uniqueFieldLetter := packageLetter.packaging.GetUniqueField()
+
+	fmt.Printf("Unique field for BoxPackage: %s\n", uniqueFieldBox)
+	fmt.Printf("Unique field for LetterPackage: %s\n", uniqueFieldLetter)
 }
