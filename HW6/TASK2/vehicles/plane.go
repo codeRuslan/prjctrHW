@@ -8,24 +8,30 @@ type Plane struct {
 }
 
 func (p *Plane) ChangeSpeed(speed int) {
+	if speed < 400 {
+		fmt.Println("Plane cannot sustain speed lower than 400 km/h in order to continue a flight")
+		return
+	}
 	p.Speed = speed
 }
 
 func (p *Plane) Move() {
-	fmt.Println("Moving")
+	fmt.Println("Started Flying")
 }
 
 func (p *Plane) Stop() {
-	fmt.Println("Stop")
+	fmt.Println("Landing in a Airport")
 	p.Speed = 0
 }
 
 func (p *Plane) PutPassenger() {
-	p.Passengers++
+	fmt.Println("Airplane cannot pick up anymore passengers while in flight")
+	return
 }
 
 func (p *Plane) OutputPassenger() {
-	p.Passengers--
+	fmt.Println("Airplane cannot pick up anymore passengers while in flight")
+	return
 }
 
 func (p Plane) String() string {

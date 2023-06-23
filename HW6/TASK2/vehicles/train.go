@@ -12,19 +12,21 @@ func (t *Train) ChangeSpeed(speed int) {
 }
 
 func (t *Train) Move() {
-	fmt.Println("Moving")
+	fmt.Println("Starting movement from Train station")
 }
 
 func (t *Train) Stop() {
-	fmt.Println("Stop")
+	fmt.Println("Stopping at the train station")
 	t.Speed = 0
 }
 
 func (t *Train) PutPassenger() {
+	fmt.Println("Stopping at the train station to pick up Passenger")
 	t.Passengers++
 }
 
 func (t *Train) OutputPassenger() {
+	fmt.Println("Stopping at the train station to leave a Passenger")
 	t.Passengers++
 }
 
