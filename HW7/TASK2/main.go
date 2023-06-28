@@ -8,28 +8,30 @@ import (
 
 func main() {
 	rand.Seed(time.Now().Unix())
-	amountOfNumsGenerated := rand.Intn(10) + 1 // Генеруємо випадкове число від 1 до 10
+
 	firstChannel := make(chan int)
+	secondChannel := make(chan int)
 
 	go func() {
 		min := 1
 		max := 100
+		amountOfNumsGenerated := rand.Intn(10) + 1 // Генеруємо випадкове число від 1 до 10
 
 		for i := 0; i < amountOfNumsGenerated; i++ {
 			firstChannel <- rand.Intn(max-min+1) + min
 		}
+		close(firstChannel)
 
-		msgMinSlice := <-firstChannel
-		msgMaxSlice := <-firstChannel
+		msgMinSlice := <-secondChannel
+		msgMaxSlice := <-secondChannel
 		fmt.Printf("Max number: %d. Min number: %d\n", msgMaxSlice, msgMinSlice)
 	}()
 
 	go func() {
-		numSlice := make([]int, 0, amountOfNumsGenerated) // Вказуємо довжину та ємність зрізу
+		numSlice := make([]int, 0) // Вказуємо довжину та ємність зрізу
 
-		for i := 0; i < amountOfNumsGenerated; i++ {
-			num := <-firstChannel
-			numSlice = append(numSlice, num)
+		for elem := range firstChannel {
+			numSlice = append(numSlice, elem)
 		}
 
 		minSlice := numSlice[0]
@@ -50,9 +52,9 @@ func main() {
 			}
 		}
 
-		firstChannel <- minSlice
-		firstChannel <- maxSlice
-		close(firstChannel)
+		secondChannel <- minSlice
+		secondChannel <- maxSlice
+		close(secondChannel)
 	}()
 
 	time.Sleep(time.Second)
