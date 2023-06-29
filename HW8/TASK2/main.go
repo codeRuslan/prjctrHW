@@ -1,61 +1,95 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
 func main() {
-	rand.Seed(time.Now().Unix())
+	iterationCount := 1
+	playerCount := 2
+	questionsChannel := make(chan int)
+	calculatorChannel := make(chan int)
+	outputChannel := make(chan int)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
 
-	firstChannel := make(chan int)
-	secondChannel := make(chan int)
+	rand.Seed(time.Now().UnixNano())
+	ticker := time.NewTicker(10 * time.Second)
 
-	go func() {
-		min := 1
-		max := 100
-		amountOfNumsGenerated := rand.Intn(10) + 1 // Генеруємо випадкове число від 1 до 10
-
-		for i := 0; i < amountOfNumsGenerated; i++ {
-			firstChannel <- rand.Intn(max-min+1) + min
-		}
-		close(firstChannel)
-
-		msgMinSlice := <-secondChannel
-		msgMaxSlice := <-secondChannel
-		fmt.Printf("Max number: %d. Min number: %d\n", msgMaxSlice, msgMinSlice)
-	}()
+	go generateQuestions(ctx, ticker, questionsChannel, playerCount+1)
+	go processPlayer(ctx, ticker, questionsChannel, calculatorChannel, iterationCount, "Player1")
+	go processPlayer(ctx, ticker, questionsChannel, calculatorChannel, iterationCount, "Player2")
+	go calculateAnswers(ctx, ticker, questionsChannel, calculatorChannel, outputChannel)
 
 	go func() {
-		numSlice := make([]int, 0) // Вказуємо довжину та ємність зрізу
-
-		for elem := range firstChannel {
-			numSlice = append(numSlice, elem)
-		}
-
-		minSlice := numSlice[0]
-		maxSlice := numSlice[0]
-		fmt.Println("------")
-		fmt.Println("How the list looks now:")
-		for i, v := range numSlice {
-			fmt.Println(i, v)
-		}
-		fmt.Println("------")
-
-		for i := 0; i < len(numSlice); i++ {
-			if numSlice[i] < minSlice {
-				minSlice = numSlice[i]
-			}
-			if numSlice[i] > maxSlice {
-				maxSlice = numSlice[i]
-			}
-		}
-
-		secondChannel <- minSlice
-		secondChannel <- maxSlice
-		close(secondChannel)
+		<-signalChan
+		cancel()
+		time.Sleep(time.Second * 3)
+		fmt.Println("[Information] Successfully managed to gracefully shut down all components")
+		fmt.Println("Exiting....")
+		os.Exit(1)
 	}()
 
-	time.Sleep(time.Second)
+	for {
+		fmt.Printf("[ITERATION #%d] Count of valid answers equals to => %d\n", iterationCount, <-outputChannel)
+		iterationCount++
+		fmt.Println("----------------- NEXT ITERATION HAS STARTED -----------------")
+	}
+}
+
+func generateQuestions(ctx context.Context, ticker *time.Ticker, questionsChannel chan<- int, playerCount int) {
+	for {
+		select {
+		case <-ticker.C:
+			generatedAnswer := rand.Intn(10)
+			for i := 0; i < playerCount; i++ {
+				questionsChannel <- generatedAnswer
+			}
+		case <-ctx.Done():
+			fmt.Println("[Generator] Received Cancel() shutting down...")
+			return
+		}
+	}
+}
+
+func processPlayer(ctx context.Context, ticker *time.Ticker, questionsChannel <-chan int, calculatorChannel chan<- int, iterationCount int, playerName string) {
+	for {
+		select {
+		case <-ticker.C:
+			answerFromPlayerChannel := <-questionsChannel
+			fmt.Printf("[ITERATION #%d][%s] Got response: %d\n", iterationCount, playerName, answerFromPlayerChannel)
+			calculatorChannel <- answerFromPlayerChannel
+		case <-ctx.Done():
+			fmt.Printf("[%s] Received Cancel() shutting down...\n", playerName)
+			return
+		}
+	}
+}
+
+func calculateAnswers(ctx context.Context, ticker *time.Ticker, questionsChannel <-chan int, calculatorChannel <-chan int, outputChannel chan<- int) {
+	countValidAnswersFromPlayers := 0
+	for {
+		select {
+		case <-ticker.C:
+			answerFromPlayerChannel := <-questionsChannel
+			for i := 0; i < 2; i++ {
+				guessFromPlayer := <-calculatorChannel
+				if guessFromPlayer == answerFromPlayerChannel {
+					countValidAnswersFromPlayers++
+				}
+			}
+			outputChannel <- countValidAnswersFromPlayers
+		case <-ctx.Done():
+			fmt.Println("[Calculator] Received Cancel() shutting down...")
+			return
+		}
+	}
 }
