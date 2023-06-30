@@ -9,16 +9,24 @@ import (
 	"time"
 )
 
-type Info struct {
+type Order struct {
 	Name         string
 	GoodName     string
 	AmountOfGood int
 }
 
+type PriceCalculator struct {
+	Prices map[string]int
+}
+
+func (pc *PriceCalculator) CalculateTotalPrice(order Order) int {
+	return pc.Prices[order.GoodName] * order.AmountOfGood
+}
+
 func main() {
 	ctx := context.Background()
 	ctx, stop := context.WithCancel(ctx)
-	channelInfo := make(chan Info, 100) // Buffered channel for better performance
+	channelInfo := make(chan Order, 100) // Buffered channel for better performance
 	count := flag.Int("amount", 5, "Amount of customer info to process")
 	flag.Parse()
 
@@ -47,25 +55,28 @@ func main() {
 
 			randAmountOfGood := rand.Intn(10)
 
-			GeneratedInfo := Info{
+			GeneratedOrder := Order{
 				Name:         randName,
 				GoodName:     randGood,
 				AmountOfGood: randAmountOfGood,
 			}
-			channelInfo <- GeneratedInfo
+			channelInfo <- GeneratedOrder
 		}
-
+		time.Sleep(time.Second)
 		stop()
 	}()
 
 	go func() {
 		defer wg.Done()
+		pc := PriceCalculator{Prices: goodPrices}
 		sumOfOrders := 0
+
 		for {
 			select {
-			case clientInfo := <-channelInfo:
-				sumOfOrders += goodPrices[clientInfo.GoodName] * clientInfo.AmountOfGood
-				fmt.Println(clientInfo)
+			case order := <-channelInfo:
+				orderPrice := pc.CalculateTotalPrice(order)
+				sumOfOrders += orderPrice
+				fmt.Println(order)
 			case <-ctx.Done():
 				fmt.Println("Sum of all goods:")
 				fmt.Println(sumOfOrders)
@@ -75,4 +86,5 @@ func main() {
 	}()
 
 	wg.Wait()
+
 }
