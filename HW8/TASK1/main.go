@@ -15,6 +15,29 @@ type Order struct {
 	AmountOfGood int
 }
 
+type OrderGenerator struct {
+	Names     []string
+	GoodNames []string
+}
+
+func (og *OrderGenerator) GenerateOrder() Order {
+	rand.Seed(time.Now().UnixNano())
+
+	randIndex := rand.Intn(len(og.Names))
+	randName := og.Names[randIndex]
+
+	randIndex = rand.Intn(len(og.GoodNames))
+	randGood := og.GoodNames[randIndex]
+
+	randAmountOfGood := rand.Intn(10)
+
+	return Order{
+		Name:         randName,
+		GoodName:     randGood,
+		AmountOfGood: randAmountOfGood,
+	}
+}
+
 type PriceCalculator struct {
 	Prices map[string]int
 }
@@ -30,13 +53,20 @@ func main() {
 	count := flag.Int("amount", 5, "Amount of customer info to process")
 	flag.Parse()
 
-	names := []string{"Luiz", "Andrew", "Jame", "Anastasia", "John", "Margo", "Krio", "Maria", "Philip", "Julia"}
-	goodNames := []string{"ball", "chair", "table", "knife", "tires", "tent", "shelf", "water"}
-	prices := []int{10, 49, 89, 15, 29, 99, 79, 1}
+	orderGenerator := OrderGenerator{
+		Names:     []string{"Luiz", "Andrew", "Jame", "Anastasia", "John", "Margo", "Krio", "Maria", "Philip", "Julia"},
+		GoodNames: []string{"ball", "chair", "table", "knife", "tires", "tent", "shelf", "water"},
+	}
 
-	goodPrices := make(map[string]int)
-	for i, name := range goodNames {
-		goodPrices[name] = prices[i]
+	goodPrices := map[string]int{
+		"ball":  10,
+		"chair": 49,
+		"table": 89,
+		"knife": 15,
+		"tires": 29,
+		"tent":  99,
+		"shelf": 79,
+		"water": 1,
 	}
 
 	var wg sync.WaitGroup
@@ -44,22 +74,9 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		rand.Seed(time.Now().UnixNano())
 
 		for i := 0; i < *count; i++ {
-			randIndex := rand.Intn(len(names))
-			randName := names[randIndex]
-
-			randIndex = rand.Intn(len(goodNames))
-			randGood := goodNames[randIndex]
-
-			randAmountOfGood := rand.Intn(10)
-
-			GeneratedOrder := Order{
-				Name:         randName,
-				GoodName:     randGood,
-				AmountOfGood: randAmountOfGood,
-			}
+			GeneratedOrder := orderGenerator.GenerateOrder()
 			channelInfo <- GeneratedOrder
 		}
 		time.Sleep(time.Second)
@@ -86,5 +103,4 @@ func main() {
 	}()
 
 	wg.Wait()
-
 }
