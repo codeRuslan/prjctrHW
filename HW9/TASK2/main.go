@@ -8,8 +8,6 @@ import (
 	"strconv"
 )
 
-var Students []Student
-
 type Student struct {
 	Id          int    `json:"Id"`
 	Name        string `json:"Name"`
@@ -27,30 +25,40 @@ var adminUser = User{
 }
 
 func main() {
-	Students = []Student{
+	// Initialize students
+	students := []Student{
 		Student{1, "Ruslan", 99},
 		Student{2, "Luiz", 89},
 		Student{3, "John", 32},
 		Student{4, "Alexa", 11},
 	}
-	handleRequests()
-}
 
-func handleRequests() {
+	// Create router
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.Handle("/student/{id}", auth(http.HandlerFunc(GetStudents))).Methods("GET")
+
+	// Add route with authentication middleware
+	myRouter.Handle("/student/{id}", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		GetStudents(w, r, students)
+	}))).
+		Methods("GET")
+
+	// Start server
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
 }
 
-func GetStudents(w http.ResponseWriter, r *http.Request) {
+func GetStudents(w http.ResponseWriter, r *http.Request, students []Student) {
 	vars := mux.Vars(r)
 	key, _ := strconv.Atoi(vars["id"])
 
-	for _, student := range Students {
+	for _, student := range students {
 		if student.Id == int(key) {
 			json.NewEncoder(w).Encode(student)
+			return
 		}
 	}
+
+	// Student not found
+	w.WriteHeader(http.StatusNotFound)
 }
 
 func auth(next http.Handler) http.Handler {
