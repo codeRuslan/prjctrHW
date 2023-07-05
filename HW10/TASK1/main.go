@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 type WeatherData struct {
@@ -36,7 +37,6 @@ func GetCurrentWeather(w http.ResponseWriter, r *http.Request) {
 	key := vars["city"]
 	dataResponse := GetWeatherAPIResponse(key)
 	json.NewEncoder(w).Encode(dataResponse.Main)
-	w.WriteHeader(http.StatusOK)
 }
 
 func GetWeatherAPIResponse(city string) (apiResponse WeatherData) {
@@ -44,8 +44,8 @@ func GetWeatherAPIResponse(city string) (apiResponse WeatherData) {
 
 	req, _ := http.NewRequest("GET", url, nil)
 
-	req.Header.Add("X-RapidAPI-Key", "93d0bc0245msh36f35f4080c8ee0p173769jsn21bbdc0408a9")
-	req.Header.Add("X-RapidAPI-Host", "open-weather13.p.rapidapi.com")
+	req.Header.Add("X-RapidAPI-Key", os.Getenv("X-RapidAPI-Key"))
+	req.Header.Add("X-RapidAPI-Host", os.Getenv("X-RapidAPI-Host"))
 
 	res, _ := http.DefaultClient.Do(req)
 

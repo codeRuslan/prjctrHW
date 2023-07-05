@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -45,7 +46,6 @@ func GetTranslateResponse(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 
 }
@@ -63,8 +63,8 @@ func GetGoogleTranslateResponse(sourceLang string, targetLang string, payloadTex
 
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 	req.Header.Add("Accept-Encoding", "application/gzip")
-	req.Header.Add("X-RapidAPI-Key", "93d0bc0245msh36f35f4080c8ee0p173769jsn21bbdc0408a9")
-	req.Header.Add("X-RapidAPI-Host", "google-translate1.p.rapidapi.com")
+	req.Header.Add("X-RapidAPI-Key", os.Getenv("X-RapidAPI-Key"))
+	req.Header.Add("X-RapidAPI-Host", os.Getenv("X-RapidAPI-Host"))
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
