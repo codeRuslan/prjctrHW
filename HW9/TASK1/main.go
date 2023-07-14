@@ -21,38 +21,38 @@ func main() {
 	}
 
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) {
-		GetAllTasks(w, r, tasks)
-	}).Methods("GET")
-	myRouter.HandleFunc("/task/{date}", func(w http.ResponseWriter, r *http.Request) {
-		GetSingleTask(w, r, tasks)
-	}).Methods("GET")
+	myRouter.HandleFunc("/tasks", GetAllTasks(tasks)).Methods("GET")
+	myRouter.HandleFunc("/task/{date}", GetSingleTask(tasks)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":10000", myRouter))
 }
 
-func GetAllTasks(w http.ResponseWriter, r *http.Request, tasks []Task) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tasks)
+func GetAllTasks(tasks []Task) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(tasks)
+	}
 }
 
-func GetSingleTask(w http.ResponseWriter, r *http.Request, tasks []Task) {
-	w.Header().Set("Content-Type", "application/json")
-	vars := mux.Vars(r)
-	key := vars["date"]
-	var foundTasks []Task
+func GetSingleTask(tasks []Task) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		vars := mux.Vars(r)
+		key := vars["date"]
+		var foundTasks []Task
 
-	for _, task := range tasks {
-		if task.Date == key {
-			foundTasks = append(foundTasks, task)
+		for _, task := range tasks {
+			if task.Date == key {
+				foundTasks = append(foundTasks, task)
+			}
 		}
-	}
 
-	if len(foundTasks) == 0 {
-		// Task not found
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+		if len(foundTasks) == 0 {
+			// Task not found
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 
-	json.NewEncoder(w).Encode(foundTasks)
+		json.NewEncoder(w).Encode(foundTasks)
+	}
 }
