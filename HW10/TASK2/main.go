@@ -1,16 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 )
+
+type TranslationRequest struct {
+	SourceLanguage string `json:"sourceLanguage"`
+	TargetLanguage string `json:"targetLanguage"`
+	Text           string `json:"text"`
+}
 
 type TranslationResponse struct {
 	Data struct {
@@ -26,42 +31,61 @@ func main() {
 
 func handleRequest() {
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/translate/{sourceLanguage}-{targetLanguage}/{text}", GetTranslateResponse).Methods(http.MethodPost)
+	myRouter.HandleFunc("/translate", GetTranslateResponse).Methods(http.MethodPost)
 
 	log.Fatal(http.ListenAndServe(":10000", myRouter))
 }
 
 func GetTranslateResponse(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	sourceLanguage := vars["sourceLanguage"]
-	targetLanguage := vars["targetLanguage"]
-	text := vars["text"]
+	var translationRequest TranslationRequest
 
-	translation := GetGoogleTranslateResponse(sourceLanguage, targetLanguage, text)
+	err := json.NewDecoder(r.Body).Decode(&translationRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	translation := GetGoogleTranslateResponse(translationRequest.SourceLanguage, translationRequest.TargetLanguage, translationRequest.Text)
 
 	// Encode the translation response as JSON
 	jsonResponse, err := json.Marshal(translation.Data.Translations)
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResponse)
-
 }
 
 func GetGoogleTranslateResponse(sourceLang string, targetLang string, payloadText string) TranslationResponse {
 	urlOfUser := "https://google-translate1.p.rapidapi.com/language/translate/v2"
-	encodedPayloadText := html.EscapeString(payloadText)
 
-	payload := fmt.Sprintf("q=%s&format=html&target=%s&source=%s", encodedPayloadText, targetLang, sourceLang)
+	requestBody := struct {
+		Q      string `json:"q"`
+		Format string `json:"format"`
+		Target string `json:"target"`
+		Source string `json:"source"`
+	}{
+		Q:      payloadText,
+		Format: "html",
+		Target: targetLang,
+		Source: sourceLang,
+	}
 
-	req, err := http.NewRequest("POST", urlOfUser, strings.NewReader(payload))
+	requestBytes, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	req, err := http.NewRequest("POST", urlOfUser, ioutil.NopCloser(bytes.NewReader(requestBytes)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept-Encoding", "application/gzip")
 	req.Header.Add("X-RapidAPI-Key", os.Getenv("X-RapidAPI-Key"))
 	req.Header.Add("X-RapidAPI-Host", os.Getenv("X-RapidAPI-Host"))
