@@ -5,7 +5,6 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 	"regexp"
-	"strings"
 )
 
 type Phone struct {
@@ -27,7 +26,7 @@ func main() {
 		panic(err.Error())
 	}
 	// Close the connection when the database transaction is over.
-	defer db.Close() // Not required!
+	defer db.Close()
 
 	db.DropTable(&Phone{})
 	db.CreateTable(&Phone{})
@@ -43,38 +42,13 @@ func main() {
 		fmt.Println(phone.PhoneNumber)
 	}
 
-	regex := `\+?\d{0,2}[-.\s(]?\d{1,3}[-.\s)]?\d{1,3}[-.\s]?\d{1,4}`
-	searchFormat := "(###) ###-####"
-	searchPhoneNumbers := searchPhoneNumbersInFormat(listPhones, regex, searchFormat)
-	fmt.Printf("\nPhone Numbers in Format %s:\n", searchFormat)
-	for _, phoneNumber := range searchPhoneNumbers {
-		fmt.Println(phoneNumber)
-	}
-}
-func applyRegex(phoneNumber string) string {
-	regex := regexp.MustCompile(`\D`)
-	return regex.ReplaceAllString(phoneNumber, "")
-}
+	// Регулярний вираз для пошуку телефонних номерів у різних форматах
+	phoneRegex := regexp.MustCompile(`\(?(\d{3})\)?[-.\s]?(\d{3})[-.\s]?(\d{4})`)
 
-func searchPhoneNumbersInFormat(phones []Phone, regex, format string) []string {
-	var matchedPhoneNumbers []string
-	searchRegex := formatToRegex(regex, format)
-
-	for _, phone := range phones {
-		if searchRegex.MatchString(phone.PhoneNumber) {
-			matchedPhoneNumbers = append(matchedPhoneNumbers, phone.PhoneNumber)
+	fmt.Println("\nMatching Phone Numbers:")
+	for _, phone := range initPhoneNumbers {
+		if phoneRegex.MatchString(phone.PhoneNumber) {
+			fmt.Println(phone.PhoneNumber)
 		}
 	}
-
-	return matchedPhoneNumbers
-}
-
-func formatToRegex(regex, format string) *regexp.Regexp {
-	format = regexp.QuoteMeta(format)
-	format = regexp.MustCompile(`\\#`).ReplaceAllLiteralString(format, `\d`)
-
-	regex = fmt.Sprintf("^%s$", regex)
-	regex = regexp.MustCompile(`\(\?i\)`).ReplaceAllLiteralString(regex, "")
-
-	return regexp.MustCompile(strings.ReplaceAll(regex, "###", format))
 }
