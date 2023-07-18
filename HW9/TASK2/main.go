@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"log"
@@ -25,7 +26,6 @@ var adminUser = User{
 }
 
 func main() {
-	// Initialize students
 	students := []Student{
 		Student{1, "Ruslan", 99},
 		Student{2, "Luiz", 89},
@@ -33,27 +33,29 @@ func main() {
 		Student{4, "Alexa", 11},
 	}
 
-	// Create router
 	myRouter := mux.NewRouter().StrictSlash(true)
 
-	// Add route with authentication middleware
 	myRouter.Handle("/student/{id}", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		GetStudents(w, r, students)
+		GetStudents(w, r, students, adminUser)
 	}))).
 		Methods("GET")
 
-	// Start server
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
 }
 
-func GetStudents(w http.ResponseWriter, r *http.Request, students []Student) {
+func GetStudents(w http.ResponseWriter, r *http.Request, students []Student, currentUser User) {
 	vars := mux.Vars(r)
 	key, _ := strconv.Atoi(vars["id"])
 
 	for _, student := range students {
 		if student.Id == int(key) {
-			json.NewEncoder(w).Encode(student)
-			return
+			if isAdmin(currentUser) || isTeacherOfStudent(currentUser, student) {
+				json.NewEncoder(w).Encode(student)
+				return
+			} else {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 		}
 	}
 
@@ -74,7 +76,33 @@ func auth(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-
-		next.ServeHTTP(w, r)
+		
+		ctx := context.WithValue(r.Context(), "user", adminUser)
+		
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func setUserContext(r *http.Request, user User) *http.Request {
+	ctx := context.WithValue(r.Context(), "user", user)
+	return r.WithContext(ctx)
+}
+
+func getCurrentUser(r *http.Request) User {
+	user := r.Context().Value("user")
+	if user != nil {
+		if currentUser, ok := user.(User); ok {
+			return currentUser
+		}
+	}
+	return User{}
+}
+
+func isAdmin(user User) bool {
+	return user.Username == adminUser.Username && user.Password == adminUser.Password
+}
+
+func isTeacherOfStudent(teacher User, student Student) bool {
+	// For simplicity, let's assume the teacher's username should match the student's name.
+	return teacher.Username == student.Name
 }
