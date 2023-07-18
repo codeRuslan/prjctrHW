@@ -18,11 +18,13 @@ type Student struct {
 type User struct {
 	Username string
 	Password string
+	Role     string
 }
 
-var adminUser = User{
-	Username: "admin",
-	Password: "admin",
+var users = []User{
+	User{Username: "admin", Password: "admin", Role: "admin"},
+	User{Username: "teacher1", Password: "teacher1", Role: "teacher"},
+	User{Username: "teacher2", Password: "teacher2", Role: "teacher"},
 }
 
 func main() {
@@ -36,19 +38,20 @@ func main() {
 	myRouter := mux.NewRouter().StrictSlash(true)
 
 	myRouter.Handle("/student/{id}", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		GetStudents(w, r, students, adminUser)
+		GetStudents(w, r, students)
 	}))).
 		Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
 }
 
-func GetStudents(w http.ResponseWriter, r *http.Request, students []Student, currentUser User) {
+func GetStudents(w http.ResponseWriter, r *http.Request, students []Student) {
 	vars := mux.Vars(r)
 	key, _ := strconv.Atoi(vars["id"])
 
 	for _, student := range students {
 		if student.Id == int(key) {
+			currentUser := getCurrentUser(r)
 			if isAdmin(currentUser) || isTeacherOfStudent(currentUser, student) {
 				json.NewEncoder(w).Encode(student)
 				return
@@ -72,20 +75,23 @@ func auth(next http.Handler) http.Handler {
 			return
 		}
 
-		if username != adminUser.Username || password != adminUser.Password {
+		var currentUser User
+		for _, user := range users {
+			if user.Username == username && user.Password == password {
+				currentUser = user
+				break
+			}
+		}
+
+		if currentUser.Role == "" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		
-		ctx := context.WithValue(r.Context(), "user", adminUser)
-		
+
+		ctx := context.WithValue(r.Context(), "user", currentUser)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-func setUserContext(r *http.Request, user User) *http.Request {
-	ctx := context.WithValue(r.Context(), "user", user)
-	return r.WithContext(ctx)
 }
 
 func getCurrentUser(r *http.Request) User {
@@ -99,10 +105,10 @@ func getCurrentUser(r *http.Request) User {
 }
 
 func isAdmin(user User) bool {
-	return user.Username == adminUser.Username && user.Password == adminUser.Password
+	return user.Role == "admin"
 }
 
 func isTeacherOfStudent(teacher User, student Student) bool {
 	// For simplicity, let's assume the teacher's username should match the student's name.
-	return teacher.Username == student.Name
+	return teacher.Role == "teacher" && teacher.Username == student.Name
 }
