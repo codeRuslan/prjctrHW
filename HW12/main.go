@@ -8,61 +8,76 @@ import (
 	"strings"
 )
 
-type AdditionalDecorators struct {
-	Actions
+type Action interface {
+	PerformAction() string
 }
 
-func (ad *AdditionalDecorators) doubleSpaceEverything() string {
-	text := strings.ReplaceAll(ad.justPrint(), " ", "  ")
-	return text
-}
-
-func (ad *AdditionalDecorators) capitalizeWord() string {
-	text := ad.justPrint()
-	text = strings.ToUpper(text)
-	return text
-}
-
-type Actions interface {
-	delete(word string)
-	interchange(word string, newWord string)
-	justPrint() string
-}
-
-type basicText struct {
+type TextAction struct {
 	text string
 }
 
-func (bt *basicText) delete(word string) {
-	words := strings.Fields(bt.text)
+func (ta *TextAction) PerformAction() string {
+	return ta.text
+}
+
+type DeleteWordAction struct {
+	Action
+	wordToDelete string
+}
+
+func (dwa *DeleteWordAction) PerformAction() string {
+	text := dwa.Action.PerformAction()
+	words := strings.Fields(text)
 	var result []string
 
 	for _, w := range words {
-		if w != word {
+		if w != dwa.wordToDelete {
 			result = append(result, w)
 		}
 	}
 
-	bt.text = strings.Join(result, " ")
+	return strings.Join(result, " ")
 }
 
-func (bt *basicText) justPrint() string {
-	return bt.text
+type InterchangeWordAction struct {
+	Action
+	wordToReplace   string
+	replacementWord string
 }
 
-func (bt *basicText) interchange(word string, newWord string) {
-	words := strings.Fields(bt.text)
+func (iwa *InterchangeWordAction) PerformAction() string {
+	text := iwa.Action.PerformAction()
+	words := strings.Fields(text)
 	var result []string
 
 	for _, w := range words {
-		if w == word {
-			result = append(result, newWord)
+		if w == iwa.wordToReplace {
+			result = append(result, iwa.replacementWord)
 		} else {
 			result = append(result, w)
 		}
 	}
 
-	bt.text = strings.Join(result, " ")
+	return strings.Join(result, " ")
+}
+
+type CapitalizeDecorator struct {
+	Action
+}
+
+func (cd *CapitalizeDecorator) PerformAction() string {
+	text := cd.Action.PerformAction()
+	return strings.ToUpper(text)
+}
+
+type DoubleSpaceDecorator struct {
+	Action
+}
+
+// PerformAction подвоює всі пробіли у тексті.
+func (dsd *DoubleSpaceDecorator) PerformAction() string {
+	text := dsd.Action.PerformAction()
+	return strings.ReplaceAll(text, " ", "  ")
 }
 
 func main() {
@@ -90,9 +105,7 @@ func main() {
 
 	fileContent := string(content)
 
-	var input = &basicText{
-		text: fileContent,
-	}
+	var action Action = &TextAction{text: fileContent}
 
 	fmt.Println("Initial input ->")
 	fmt.Println(fileContent)
@@ -102,63 +115,38 @@ func main() {
 
 	if *useInterchangeFlag {
 		newWord := "replacement"
-		input.interchange("world", newWord)
-		fmt.Println("Interchanged output ->")
-		fmt.Println(input.text)
-
-		if *capitalizeDecoratorFlag {
-			decorator := AdditionalDecorators{Actions: input}
-			outputText := decorator.capitalizeWord()
-			fmt.Println("Capitalized output ->")
-			fmt.Println(outputText)
-			if *overwriteFileFlag {
-				overwriteFile(pathFlag, outputText)
-			}
-		}
-		if *doubleSpaceDecoratorFlag {
-			decorator := AdditionalDecorators{Actions: input}
-			outputText := decorator.doubleSpaceEverything()
-			fmt.Println("Double Spaced output ->")
-			fmt.Println(outputText)
-			if *overwriteFileFlag {
-				overwriteFile(pathFlag, outputText)
-			}
-		}
+		action = &InterchangeWordAction{Action: action, wordToReplace: "world", replacementWord: newWord}
 	} else if *useDeleteFlag {
-		input.delete("world")
-		fmt.Println("Deleted output ->")
-		fmt.Println(input.text)
-
-		if *capitalizeDecoratorFlag {
-			decorator := AdditionalDecorators{Actions: input}
-			outputText := decorator.capitalizeWord()
-			fmt.Println("Capitalized output ->")
-			fmt.Println(outputText)
-			if *overwriteFileFlag {
-				overwriteFile(pathFlag, outputText)
-			}
-		}
-		if *doubleSpaceDecoratorFlag {
-			decorator := AdditionalDecorators{Actions: input}
-			outputText := decorator.doubleSpaceEverything()
-			fmt.Println("Double Spaced output ->")
-			fmt.Println(outputText)
-			if *overwriteFileFlag {
-				overwriteFile(pathFlag, outputText)
-			}
-		}
-
+		action = &DeleteWordAction{Action: action, wordToDelete: "world"}
 	} else {
 		fmt.Println("No action selected. Please use -useInterchangeFlag or -useDeleteFlag flag.")
-	}
-}
-
-func overwriteFile(path *string, text string) {
-	err := ioutil.WriteFile(*path, []byte(text), 0666)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
 		return
 	}
-	fmt.Println("File overwritten successfully.")
 
+	if *capitalizeDecoratorFlag {
+		action = &CapitalizeDecorator{Action: action}
+	}
+
+	if *doubleSpaceDecoratorFlag {
+		action = &DoubleSpaceDecorator{Action: action}
+	}
+
+	outputText := action.PerformAction()
+
+	fmt.Println("Output ->")
+	fmt.Println(outputText)
+
+	if *overwriteFileFlag {
+		overwriteFile(pathFlag, outputText)
+	}
+
+}
+
+func overwriteFile(filePath *string, text string) error {
+	err := ioutil.WriteFile(*filePath, []byte(text), 0666)
+	if err != nil {
+		return fmt.Errorf("error writing to the file: %w", err)
+	}
+	fmt.Println("File overwritten successfully.")
+	return nil
 }
