@@ -1,0 +1,5 @@
+server:
+  port: 8081
+
+database:
+  databaseLocation: "/Users/ruslanpilipyuk/GolandProjects/awesomeProject3/cmd/test.db"
