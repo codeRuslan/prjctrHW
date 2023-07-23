@@ -13,5 +13,6 @@ func HandleRequests() {
 	myRouter.HandleFunc("/users", handler.AllUsers).Methods("GET")
 	myRouter.HandleFunc("/creteUser", handler.CreateUser).Methods("POST")
 	myRouter.HandleFunc("/deleteUser", handler.DeleteUser).Methods("POST")
+	myRouter.HandleFunc("/updateUser", handler.updateUser).Methods("POST")
 	log.Fatal(http.ListenAndServe(":"+dependencies.Cfg.Server.Port, myRouter))
 }

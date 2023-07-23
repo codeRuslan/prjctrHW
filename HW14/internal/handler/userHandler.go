@@ -28,7 +28,7 @@ func AllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	db, err := gorm.Open("sqlite3", "/Users/ruslanpilipyuk/GolandProjects/awesomeProject3/cmd/test.db")
+	db, err := gorm.Open("sqlite3", dependencies.Cfg.Database.DatabaseLocation)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, "Failed to connect to DB", http.StatusInternalServerError)
@@ -45,8 +45,35 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "User Has Been Updated/Created Successfully")
 }
 
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	db, err := gorm.Open("sqlite3", dependencies.Cfg.Database.DatabaseLocation)
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, "Failed to connect to DB", http.StatusInternalServerError)
+	}
+
+	defer db.Close()
+	var user types.User
+	err = json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		return
+	}
+
+	userName := user.Name
+	userSecondName := user.SecondName
+
+	if db.Where("name = ?", userName).First(&user).RecordNotFound() {
+		http.Error(w, "User Not Found", http.StatusNotFound)
+		return
+	}
+	user.SecondName = userSecondName
+	db.Save(&user)
+	fmt.Println("Successfuly updated the user")
+}
+
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	db, err := gorm.Open("sqlite3", "/Users/ruslanpilipyuk/GolandProjects/awesomeProject3/cmd/test.db")
+	db, err := gorm.Open("sqlite3", dependencies.Cfg.Database.DatabaseLocation)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, "Failed to connect to DB", http.StatusInternalServerError)
