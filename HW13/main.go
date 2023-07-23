@@ -2,7 +2,7 @@ package mainProggram
 
 import (
 	"fmt"
-	fileOrganizer "github.com/userName/otherModule"
+	fileOrganizer "github.com/codeRuslan/fileOrganizer"
 	"regexp"
 )
 
