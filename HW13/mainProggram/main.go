@@ -1,8 +1,8 @@
-package awesomeProject3
+package mainProggram
 
 import (
-	"awesomeProject3/fileOrganizer"
 	"fmt"
+	fileOrganizer "github.com/userName/otherModule"
 	"regexp"
 )
 
