@@ -41,7 +41,7 @@ func (h *Handler) SetupRoutes() {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(Response{Message: "I am Alive!"}); err != nil {
-			panic(err)
+			panic(err) // тут паніка, бо якщо цей endpoint не працює - отже нічого не працює
 		}
 	})
 }

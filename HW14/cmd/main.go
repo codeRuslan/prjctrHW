@@ -23,10 +23,12 @@ func (app *App) Run() error {
 		return err
 	}
 
-	err = database.MigrateDB(db)
-	if err != nil {
-		slog.Error("Failed to set up database")
-		return err
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		err = database.MigrateDB(db)
+		if err != nil {
+			slog.Error("Failed to set up database")
+			return err
+		}
 	}
 
 	bookService := book.NewService(db)

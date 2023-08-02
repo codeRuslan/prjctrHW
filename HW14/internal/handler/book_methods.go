@@ -29,7 +29,7 @@ func (h *Handler) GetAllBooks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(books); err != nil {
-		panic(err)
+		sendErrorResponse(w, "Failed to encode message", err)
 	}
 }
 
@@ -53,7 +53,7 @@ func (h *Handler) GetBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(book); err != nil {
-		panic(err)
+		sendErrorResponse(w, "Failed to encode message", err)
 	}
 }
 
@@ -76,7 +76,7 @@ func (h *Handler) PostBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(book); err != nil {
-		panic(err)
+		sendErrorResponse(w, "Failed to encode message", err)
 	}
 }
 
@@ -101,7 +101,7 @@ func (h *Handler) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(Response{Message: "Successfully Deleted"}); err != nil {
-		panic(err)
+		sendErrorResponse(w, "Failed to encode message", err)
 	}
 
 }
